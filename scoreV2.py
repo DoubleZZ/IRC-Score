@@ -16,7 +16,7 @@ utilisateurs = ["DoubleZ","Herondil"]
 
 score = {}
 
-#Fonction vérifiant la syntaxe des commandes entrées, renvoie une erreur et interromp la commande en cours
+#Fonction vérifiant la syntaxe des commandes entrées, renvoie un False si erreur
 def verifCommand(s, c, parameters) :
   global numbers
   global isParamNumber
@@ -67,6 +67,7 @@ def verifCommand(s, c, parameters) :
   #Sinon tout va bien  
   return True
 
+#Fonction modifiant le score des joueurs en fonction des paramètres entrés par l'utilisateur
 def setPoints(mode,name,points):
   if mode == "!set" :
     score[name] = points
@@ -83,6 +84,25 @@ def setPoints(mode,name,points):
     except :
       score[name] = - points
 
+#Fonction destiné a éviter les espaces multiples pour ne pas avoir de problèmes ensuite suite aux utilisation de split(" ")
+def antiSpace(stringInput):
+  output = ""
+  space = False
+  
+  for index,c in enumerate(stringInput) :
+    if c != " " :
+      space = False
+      output += c
+    elif not space :
+      space = True
+      output += c
+  
+  if space :
+    output = output[:len(output)-1]
+  
+  return output
+  
+#Notre bot principale s'occupant de récupérer les informations d'IRC
 class BotScore(ircbot.SingleServerIRCBot):
   def __init__(self):
     global nick
@@ -99,7 +119,8 @@ class BotScore(ircbot.SingleServerIRCBot):
     global score
     auteur = irclib.nm_to_n(ev.source())
     canal = ev.target()
-    message = ev.arguments()[0].split(" ")
+    message = ev.arguments()[0]
+    message = antiSpace(message).split(" ")
     
     #Verification d'une commande correcte
     if verifCommand(serv, canal, message):
@@ -118,11 +139,10 @@ class BotScore(ircbot.SingleServerIRCBot):
       #Affichage du score
       if message[0] == "!score" :
 	if auteur in utilisateurs :
-	  for nom in sorted(score.items(),key=lambda d:d[1],reverse=False) :
-	    serv.privmsg(canal,nom[0] + " = " + str(nom[1]) +" points")
-		
+	  for nom in sorted(score.items(),key=lambda d:d[1],reverse=True) :
+	    serv.privmsg(canal,nom[0] + " = " + str(nom[1]) +" points")	
 	else :
-	  for nom in sorted(score.items(),key=lambda d:d[1],reverse=False) :
+	  for nom in sorted(score.items(),key=lambda d:d[1],reverse=True) :
 	    serv.privmsg(auteur,nom[0] + " = " + str(nom[1]) +" points")
       
       #Distribution des points
@@ -131,10 +151,10 @@ class BotScore(ircbot.SingleServerIRCBot):
 	for index,param in enumerate(message[1:]) :
 	  if not param.isdigit() :
 	    groupe.append(param)
-	  if param.isdigit() or (index == len(message[1:])-1 and numbers == 0 and isParamNumber == False) :
+	  if param.isdigit() or (index == len(message[1:])-1 and numbers == 0 and isParamNumber == False) :	#Le 'or' fait mention a une commande d'un seul groupe de joueur sans points mentioné (c'est à dire un point)
 	    for name in groupe :
 	      if index == len(message[1:])-1 and numbers == 0 and isParamNumber == False :
-		param = "1"
+		param = "1"				#Le nombre de points est défini par une chaine string
 	      setPoints(message[0],name,int(param))
 	
 	    #Conjugaison
@@ -150,7 +170,7 @@ class BotScore(ircbot.SingleServerIRCBot):
 	      if index == len(groupe)-2 :
 		sentence += " et "
 	      elif index != len(groupe)-1 :
-		sentence =", "
+		sentence += ", "
 		  
 	    if message[0] == "!set" :
 	      if pluriel :
@@ -164,13 +184,20 @@ class BotScore(ircbot.SingleServerIRCBot):
 	  
 	    sentence += " " + verbe + " " + param + " point(s)"
 	    
+	    #Un nouveau groupe doit être crée pour ne pas donner de points à nouveaux aux mêmes pseudos
 	    groupe = []
 		
 	    #Envoie du message
 	    serv.privmsg(canal,sentence)
       
-      #DEBUG
-      #serv.privmsg(canal,str(numbers) + " " + str(isParamNumber))
+      #Supprime toute la liste... le nom de la commande est volontairement compliqué
+      if message[0] == "!reset_bloodbath" :
+	score = {}
+	serv.privmsg(canal,"Tout a été effacé, on reprend tout depuis le début !")
+	
+      #Fait dire une phrase au bot
+      if message[0] == "!say" :
+	serv.privmsg(canal,ev.arguments()[0][5:])	#On n'affiche pas les 5 premiers caractères de la commande (c'est à dire "!say ")
     
 if __name__ == "__main__":
   BotScore().start()
