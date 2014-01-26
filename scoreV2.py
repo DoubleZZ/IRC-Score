@@ -9,7 +9,7 @@ import ircbot
 
 nick = "VincentLagaf"
 description = "Bot de comptage de points en Python via ircBot (V2)"
-room = "#riffTest"
+room = "#riff"
 server = "irc.worldnet.net"
 port = 6667
 utilisateurs = ["DoubleZ","Herondil"]
@@ -124,7 +124,7 @@ class BotScore(ircbot.SingleServerIRCBot):
     
     #Verification d'une commande correcte
     if verifCommand(serv, canal, message):
-      if auteur in utilisateurs :
+      if auteur in utilisateurs :	#Seul les modos peuvent utiliser ses commandes
 	#Ajout d'un modo
 	if message[0] == "!modo" :
 	  utilisateurs.append(message[1])
@@ -145,9 +145,54 @@ class BotScore(ircbot.SingleServerIRCBot):
 	#Fait dire une phrase au bot
 	if message[0] == "!say" :
 	  serv.privmsg(canal,ev.arguments()[0][5:])	#On n'affiche pas les 5 premiers caractères de la commande (c'est à dire "!say ")
+	  
+	#Distribution des points
+	if message[0] in ["!add","!sub","!set"] :
+	  groupe = []
+	  for index,param in enumerate(message[1:]) :
+	    if not param.isdigit() :
+	      groupe.append(param)
+	    if param.isdigit() or (index == len(message[1:])-1 and numbers == 0 and isParamNumber == False) :	#Le 'or' fait mention a une commande d'un seul groupe de joueur sans points mentioné (c'est à dire un point)
+	      for name in groupe :
+		if index == len(message[1:])-1 and numbers == 0 and isParamNumber == False :
+		  param = "1"				#Le nombre de points est défini par une chaine string
+		setPoints(message[0],name,int(param))
+	  
+	      #Conjugaison
+	      if len(groupe) > 1 :
+		pluriel = True
+	      else :
+		pluriel = False
+		
+	      #Construction de la phrase
+	      sentence = ""
+	      for index,name in enumerate(groupe) :
+		sentence += name
+		if index == len(groupe)-2 :
+		  sentence += " et "
+		elif index != len(groupe)-1 :
+		  sentence += ", "
+		    
+	      if message[0] == "!set" :
+		if pluriel :
+		  verbe = "ont maintenant"
+		else :
+		  verbe = "a maintenant"
+	      if message[0] == "!add" :
+		verbe = "gagne" + "nt chacuns" * pluriel
+	      if message[0] == "!sub" :
+		verbe = "perd" + "ent chacuns" * pluriel
+	    
+	      sentence += " " + verbe + " " + param + " point(s)"
+	      
+	      #Un nouveau groupe doit être crée pour ne pas donner de points à nouveaux aux mêmes pseudos
+	      groupe = []
+		  
+	      #Envoie du message
+	      serv.privmsg(canal,sentence)
       
       #Affichage du score
-      if message[0] == "!score" :
+      if message[0] == "!score" :	#La commande diffère si elle est exécuté par un modo ou par un non modo
 	if auteur in utilisateurs :
 	  for nom in sorted(score.items(),key=lambda d:d[1],reverse=True) :
 	    if nom[1] :	#N'affiche pas le score si celui ci est à zéro point
@@ -156,51 +201,6 @@ class BotScore(ircbot.SingleServerIRCBot):
 	  for nom in sorted(score.items(),key=lambda d:d[1],reverse=True) :
 	    if nom[1] :	#N'affiche pas le score si celui ci est à zéro point
 	      serv.privmsg(auteur,nom[0] + " = " + str(nom[1]) +" points")
-      
-      #Distribution des points
-      if message[0] in ["!add","!sub","!set"] :
-	groupe = []
-	for index,param in enumerate(message[1:]) :
-	  if not param.isdigit() :
-	    groupe.append(param)
-	  if param.isdigit() or (index == len(message[1:])-1 and numbers == 0 and isParamNumber == False) :	#Le 'or' fait mention a une commande d'un seul groupe de joueur sans points mentioné (c'est à dire un point)
-	    for name in groupe :
-	      if index == len(message[1:])-1 and numbers == 0 and isParamNumber == False :
-		param = "1"				#Le nombre de points est défini par une chaine string
-	      setPoints(message[0],name,int(param))
-	
-	    #Conjugaison
-	    if len(groupe) > 1 :
-	      pluriel = True
-	    else :
-	      pluriel = False
-	      
-	    #Construction de la phrase
-	    sentence = ""
-	    for index,name in enumerate(groupe) :
-	      sentence += name
-	      if index == len(groupe)-2 :
-		sentence += " et "
-	      elif index != len(groupe)-1 :
-		sentence += ", "
-		  
-	    if message[0] == "!set" :
-	      if pluriel :
-		verbe = "ont maintenant"
-	      else :
-		verbe = "a maintenant"
-	    if message[0] == "!add" :
-	      verbe = "gagne" + "nt chacuns" * pluriel
-	    if message[0] == "!sub" :
-	      verbe = "perd" + "ent chacuns" * pluriel
-	  
-	    sentence += " " + verbe + " " + param + " point(s)"
-	    
-	    #Un nouveau groupe doit être crée pour ne pas donner de points à nouveaux aux mêmes pseudos
-	    groupe = []
-		
-	    #Envoie du message
-	    serv.privmsg(canal,sentence)
     
 if __name__ == "__main__":
   BotScore().start()
