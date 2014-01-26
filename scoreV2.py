@@ -124,26 +124,29 @@ class BotScore(ircbot.SingleServerIRCBot):
     
     #Verification d'une commande correcte
     if verifCommand(serv, canal, message):
-      #Ajout d'un modo
-      if message[0] == "!modo" :
-	utilisateurs.append(message[1])
-	serv.privmsg(canal,message[1] + " peut maintenant utiliser les commandes du bot")
-      
-      #Suppression d'un modo
-      if message[0] == "!nomodo" :
-	for index,name in enumerate(utilisateurs):
-	  if name == message[1]:
-	    utilisateurs.pop(index)
-	    serv.privmsg(canal,message[1] + " ne peut plus utiliser les commandes du bot")
+      if auteur in utilisateurs :
+	#Ajout d'un modo
+	if message[0] == "!modo" :
+	  utilisateurs.append(message[1])
+	  serv.privmsg(canal,message[1] + " peut maintenant utiliser les commandes du bot")
+	
+	#Suppression d'un modo
+	if message[0] == "!nomodo" :
+	  for index,name in enumerate(utilisateurs):
+	    if name == message[1]:
+	      utilisateurs.pop(index)
+	      serv.privmsg(canal,message[1] + " ne peut plus utiliser les commandes du bot")
       
       #Affichage du score
       if message[0] == "!score" :
 	if auteur in utilisateurs :
 	  for nom in sorted(score.items(),key=lambda d:d[1],reverse=True) :
-	    serv.privmsg(canal,nom[0] + " = " + str(nom[1]) +" points")	
+	    if nom[1] :	#N'affiche pas le score si celui ci est à zéro point
+	      serv.privmsg(canal,nom[0] + " = " + str(nom[1]) +" points")	
 	else :
 	  for nom in sorted(score.items(),key=lambda d:d[1],reverse=True) :
-	    serv.privmsg(auteur,nom[0] + " = " + str(nom[1]) +" points")
+	    if nom[1] :	#N'affiche pas le score si celui ci est à zéro point
+	      serv.privmsg(auteur,nom[0] + " = " + str(nom[1]) +" points")
       
       #Distribution des points
       if message[0] in ["!add","!sub","!set"] :
