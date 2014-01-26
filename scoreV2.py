@@ -136,6 +136,15 @@ class BotScore(ircbot.SingleServerIRCBot):
 	    if name == message[1]:
 	      utilisateurs.pop(index)
 	      serv.privmsg(canal,message[1] + " ne peut plus utiliser les commandes du bot")
+	      
+	#Supprime toute la liste... le nom de la commande est volontairement compliqué
+	if message[0] == "!reset_bloodbath" :
+	  score = {}
+	  serv.privmsg(canal,"Tout a été effacé, on reprend tout depuis le début !")
+	  
+	#Fait dire une phrase au bot
+	if message[0] == "!say" :
+	  serv.privmsg(canal,ev.arguments()[0][5:])	#On n'affiche pas les 5 premiers caractères de la commande (c'est à dire "!say ")
       
       #Affichage du score
       if message[0] == "!score" :
@@ -192,15 +201,6 @@ class BotScore(ircbot.SingleServerIRCBot):
 		
 	    #Envoie du message
 	    serv.privmsg(canal,sentence)
-      
-      #Supprime toute la liste... le nom de la commande est volontairement compliqué
-      if message[0] == "!reset_bloodbath" :
-	score = {}
-	serv.privmsg(canal,"Tout a été effacé, on reprend tout depuis le début !")
-	
-      #Fait dire une phrase au bot
-      if message[0] == "!say" :
-	serv.privmsg(canal,ev.arguments()[0][5:])	#On n'affiche pas les 5 premiers caractères de la commande (c'est à dire "!say ")
     
 if __name__ == "__main__":
   BotScore().start()
